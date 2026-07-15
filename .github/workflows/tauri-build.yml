@@ -29,6 +29,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          packageManager: npm
           tagName: ${{ github.ref_name }}
           releaseName: 'Gerson Gomes Advocacia v__VERSION__'
           releaseBody: 'Instalador oficial do Windows gerado automaticamente.'
