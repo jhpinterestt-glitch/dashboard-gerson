@@ -25,7 +25,7 @@ export default function Dashboard() {
   }, [today]);
 
   useEffect(() => {
-    setEventDays(getDaysWithEvents());
+    getDaysWithEvents().then(setEventDays);
   }, [ctx?.refreshKey]);
 
   // Build small horizontal strip of last 7 days for quick filter
