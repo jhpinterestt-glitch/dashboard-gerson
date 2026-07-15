@@ -12,13 +12,13 @@ interface Props {
 }
 
 export function UrgentDeadlines({ filterDay }: Props) {
-  const ctx = useOutletContext<{ refreshKey: number; bumpRefresh?: () => void }>() || { refreshKey: 0 };
+  const { refreshKey, searchQuery } = useOutletContext<{ refreshKey: number; searchQuery?: string }>() || { refreshKey: 0, searchQuery: "" };
   const [prazos, setPrazos] = useState<Prazo[]>([]);
   const [selected, setSelected] = useState<Prazo | null>(null);
 
   useEffect(() => {
-    setPrazos(getPrazos());
-  }, [ctx?.refreshKey]);
+    getPrazos().then(setPrazos);
+  }, [refreshKey]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -27,19 +27,29 @@ export function UrgentDeadlines({ filterDay }: Props) {
   }, []);
 
   const visible = useMemo(() => {
+    let filtered = prazos;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.titulo.toLowerCase().includes(q) ||
+          (p.detalhe && p.detalhe.toLowerCase().includes(q))
+      );
+    }
+
     if (filterDay) {
-      return prazos
+      return filtered
         .filter((p) => p.data.slice(0, 10) === filterDay)
         .sort((a, b) => a.data.localeCompare(b.data));
     }
     // Next 5 days from today (inclusive)
-    return prazos
+    return filtered
       .filter((p) => {
         const diff = differenceInCalendarDays(parseISO(p.data), today);
         return diff >= 0 && diff <= 5;
       })
       .sort((a, b) => a.data.localeCompare(b.data));
-  }, [prazos, filterDay, today]);
+  }, [prazos, filterDay, today, searchQuery]);
 
   // Weekly task load: pending prazos within current week
   const weekLoad = useMemo(() => {
@@ -164,7 +174,7 @@ export function UrgentDeadlines({ filterDay }: Props) {
         prazo={selected}
         onClose={() => setSelected(null)}
         onChanged={() => {
-          setPrazos(getPrazos());
+          getPrazos().then(setPrazos);
           ctx?.bumpRefresh?.();
         }}
       />

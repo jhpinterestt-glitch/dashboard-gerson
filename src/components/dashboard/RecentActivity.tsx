@@ -43,9 +43,9 @@ export function RecentActivity({ filterDay }: Props) {
   const [prazos, setPrazos] = useState<Prazo[]>([]);
 
   useEffect(() => {
-    setProcessos(getProcessos());
-    setLancamentos(getLancamentos());
-    setPrazos(getPrazos());
+    getProcessos().then(setProcessos);
+    getLancamentos().then(setLancamentos);
+    getPrazos().then(setPrazos);
   }, [ctx?.refreshKey]);
 
   const items = useMemo<ActivityItem[]>(() => {

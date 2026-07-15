@@ -18,28 +18,29 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function Processos() {
-  const { refreshKey } = useOutletContext<{ refreshKey: number }>();
+  const { refreshKey, searchQuery } = useOutletContext<{ refreshKey: number; searchQuery?: string }>() || { refreshKey: 0, searchQuery: "" };
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [search, setSearch] = useState("");
   const [editItem, setEditItem] = useState<Processo | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
 
   useEffect(() => {
-    setProcessos(getProcessos());
+    getProcessos().then(setProcessos);
   }, [refreshKey]);
 
-  const reload = () => setProcessos(getProcessos());
+  const reload = () => getProcessos().then(setProcessos);
 
-  const handleDelete = (id: string) => {
-    deleteProcesso(id);
+  const handleDelete = async (id: string) => {
+    await deleteProcesso(id);
     reload();
   };
 
+  const activeSearch = (searchQuery || search || "").trim().toLowerCase();
   const filtered = processos.filter(
     (p) =>
-      p.cliente.toLowerCase().includes(search.toLowerCase()) ||
-      p.numero.toLowerCase().includes(search.toLowerCase()) ||
-      p.tribunal.toLowerCase().includes(search.toLowerCase())
+      p.cliente.toLowerCase().includes(activeSearch) ||
+      p.numero.toLowerCase().includes(activeSearch) ||
+      p.tribunal.toLowerCase().includes(activeSearch)
   );
 
   return (
@@ -65,7 +66,7 @@ export default function Processos() {
               <input
                 type="text"
                 placeholder="Filtrar processos..."
-                value={search}
+                value={searchQuery || search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-muted/50 border-none focus:outline-none focus:ring-1 focus:ring-accent rounded-md text-xs pl-9 py-2 font-body placeholder:text-muted-foreground"
               />
@@ -79,8 +80,17 @@ export default function Processos() {
 
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p className="text-sm">Nenhum processo cadastrado ainda.</p>
-            <p className="text-xs mt-1">Use o botão "Novo Caso Jurídico" na barra lateral para começar.</p>
+            {processos.length === 0 ? (
+              <>
+                <p className="text-sm font-serif">Nenhum processo cadastrado ainda.</p>
+                <p className="text-xs mt-1">Use o botão "Novo Caso Jurídico" na barra lateral para começar.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-serif">Nenhum processo encontrado para a busca.</p>
+                <p className="text-xs mt-1">Tente pesquisar por outros dados de cliente, processo ou tribunal.</p>
+              </>
+            )}
           </div>
         ) : (
           <table className="w-full text-left">
@@ -157,9 +167,9 @@ function NovoProcessoModal({ onClose, onSaved }: { onClose: () => void; onSaved:
   const [tribunal, setTribunal] = useState("");
   const [valor, setValor] = useState("");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!cliente.trim() || !numero.trim()) return;
-    addProcesso({
+    await addProcesso({
       cliente,
       numero,
       tribunal,
@@ -213,8 +223,8 @@ function EditModal({ processo, onClose, onSaved }: { processo: Processo; onClose
   const [valor, setValor] = useState(String(processo.valor));
   const [status, setStatus] = useState(processo.status);
 
-  const handleSave = () => {
-    updateProcesso(processo.id, {
+  const handleSave = async () => {
+    await updateProcesso(processo.id, {
       cliente,
       numero,
       tribunal,

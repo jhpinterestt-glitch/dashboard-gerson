@@ -1,8 +1,8 @@
-# The Sovereign Ledger — Gestão Financeira Jurídica
+# Gerson Gomes Advocacia — Sistema de Gestão Jurídica
 
-**The Sovereign Ledger** é um SaaS de **Gestão Jurídica e Financeira** desenvolvido para **advogados autônomos e pequenos escritórios**. O sistema oferece controle completo de processos, fluxo de caixa, prazos e agenda — tudo em uma interface minimalista, sofisticada e otimizada para uso desktop.
+**Gerson Gomes Advocacia** é um sistema de **Gestão Jurídica e Financeira** desenvolvido para uso interno e controle de processos, fluxo de caixa, prazos e agenda — tudo em uma interface minimalista, sofisticada e otimizada para uso desktop.
 
-> Desenhado para produtividade do sócio: clareza visual, dados sempre atualizados e relatórios prontos em um clique.
+> Desenhado para produtividade: clareza visual, dados sempre atualizados e relatórios prontos em um clique.
 
 ---
 
@@ -43,7 +43,7 @@ node --version
 
 ```bash
 git clone <URL-DO-REPOSITORIO>
-cd sovereign-ledger
+cd dashboardaa
 ```
 
 **Opção B — Download manual:**
@@ -134,9 +134,7 @@ Isso significa que:
 
 Use o botão **"Exportar Relatório"** no cabeçalho regularmente para gerar um backup `.xlsx` de todos os seus dados. Esse arquivo serve como cópia de segurança e pode ser usado para auditoria contábil.
 
-### 🌐 Evolução para multi-dispositivo
-
-Caso queira sincronizar os dados na nuvem entre múltiplos dispositivos, o projeto pode ser facilmente integrado a um backend como **Lovable Cloud** ou **Supabase** sem alteração da camada visual.
+Caso precise sincronizar os dados na nuvem entre múltiplos dispositivos, o projeto pode ser integrado a um banco de dados em nuvem.
 
 ---
 
@@ -173,7 +171,7 @@ src/
 
 ## 📝 Licença
 
-Projeto privado — © The Sovereign Ledger.
+Projeto privado — © Gerson Gomes Advocacia.
 
 ---
 

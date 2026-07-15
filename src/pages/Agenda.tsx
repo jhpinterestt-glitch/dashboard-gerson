@@ -25,7 +25,7 @@ import { NovoPrazoModal } from "@/components/NovoPrazoModal";
 import { useOutletContext } from "react-router-dom";
 
 export default function Agenda() {
-  const { refreshKey } = useOutletContext<{ refreshKey: number }>();
+  const { refreshKey, searchQuery } = useOutletContext<{ refreshKey: number; searchQuery?: string }>() || { refreshKey: 0, searchQuery: "" };
   const [today, setToday] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -36,8 +36,8 @@ export default function Agenda() {
 
   // Reload data
   useEffect(() => {
-    setPrazos(getPrazos());
-    setEventDays(getDaysWithEvents());
+    getPrazos().then(setPrazos);
+    getDaysWithEvents().then(setEventDays);
   }, [refreshKey, localRefresh]);
 
   // Auto-refresh "today" at midnight
@@ -74,8 +74,21 @@ export default function Agenda() {
     .sort((a, b) => a.data.localeCompare(b.data))
     .slice(0, 6);
 
-  const handleDelete = (id: string) => {
-    deletePrazo(id);
+  const activeQuery = (searchQuery || "").trim().toLowerCase();
+
+  const searchedPrazos = useMemo(() => {
+    if (!activeQuery) return [];
+    return prazos
+      .filter(
+        (p) =>
+          p.titulo.toLowerCase().includes(activeQuery) ||
+          (p.detalhe && p.detalhe.toLowerCase().includes(activeQuery))
+      )
+      .sort((a, b) => a.data.localeCompare(b.data));
+  }, [prazos, activeQuery]);
+
+  const handleDelete = async (id: string) => {
+    await deletePrazo(id);
     setLocalRefresh((k) => k + 1);
   };
 
@@ -206,92 +219,137 @@ export default function Agenda() {
 
         {/* Sidebar with selected day events + upcoming */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          {/* Selected day */}
-          <div className="bg-card p-6 rounded-xl shadow-sm border border-border">
-            <p className="text-[10px] font-label uppercase tracking-widest text-muted-foreground mb-1">
-              Dia Selecionado
-            </p>
-            <h4 className="text-lg font-serif text-foreground mb-4 capitalize">
-              {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-            </h4>
-
-            {selectedPrazos.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic py-4">
-                Sem prazos ou eventos para este dia.
+          {activeQuery ? (
+            <div className="bg-card p-6 rounded-xl shadow-sm border border-border">
+              <p className="text-[10px] font-label uppercase tracking-widest text-muted-foreground mb-1">
+                Resultados da Busca
               </p>
-            ) : (
-              <div className="space-y-3">
-                {selectedPrazos.map((e) => (
-                  <div
-                    key={e.id}
-                    className={`p-4 rounded-lg border-l-2 group relative ${
-                      e.tipo === "fatal"
-                        ? "border-destructive bg-destructive/5"
-                        : "border-accent bg-accent/5"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      {e.tipo === "fatal" && (
-                        <AlertTriangle size={12} className="text-destructive" />
-                      )}
-                      <span className="text-[10px] font-label uppercase tracking-widest text-muted-foreground font-bold">
-                        {e.tipo === "fatal" ? "Prazo Fatal" : "Evento"}
-                      </span>
-                    </div>
-                    <p className="text-sm font-serif text-foreground">{e.titulo}</p>
-                    {e.detalhe && (
-                      <p className="text-xs text-muted-foreground italic mt-1">{e.detalhe}</p>
-                    )}
+              <h4 className="text-lg font-serif text-foreground mb-4">
+                Filtrando por: <span className="text-primary font-bold bg-muted px-2 py-0.5 rounded">"{searchQuery}"</span>
+              </h4>
+
+              {searchedPrazos.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic py-4">
+                  Nenhum compromisso encontrado.
+                </p>
+              ) : (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                  {searchedPrazos.map((e) => (
                     <button
-                      onClick={() => handleDelete(e.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                      key={e.id}
+                      onClick={() => {
+                        const d = parseISO(e.data);
+                        setSelectedDate(d);
+                        setCurrentMonth(d);
+                      }}
+                      className={`w-full text-left p-3 rounded-lg border-l-2 hover:bg-muted/30 transition-colors ${
+                        e.tipo === "fatal"
+                          ? "border-destructive bg-destructive/5"
+                          : "border-accent bg-accent/5"
+                      }`}
                     >
-                      <Trash2 size={12} />
+                      <span className="text-[10px] font-label uppercase tracking-widest text-muted-foreground font-bold block mb-1">
+                        {format(parseISO(e.data), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </span>
+                      <p className="text-sm font-serif text-foreground">{e.titulo}</p>
+                      {e.detalhe && (
+                        <p className="text-xs text-muted-foreground italic mt-1">{e.detalhe}</p>
+                      )}
                     </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Selected day */}
+              <div className="bg-card p-6 rounded-xl shadow-sm border border-border">
+                <p className="text-[10px] font-label uppercase tracking-widest text-muted-foreground mb-1">
+                  Dia Selecionado
+                </p>
+                <h4 className="text-lg font-serif text-foreground mb-4 capitalize">
+                  {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                </h4>
+
+                {selectedPrazos.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic py-4">
+                    Sem prazos ou eventos para este dia.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedPrazos.map((e) => (
+                      <div
+                        key={e.id}
+                        className={`p-4 rounded-lg border-l-2 group relative ${
+                          e.tipo === "fatal"
+                            ? "border-destructive bg-destructive/5"
+                            : "border-accent bg-accent/5"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {e.tipo === "fatal" && (
+                            <AlertTriangle size={12} className="text-destructive" />
+                          )}
+                          <span className="text-[10px] font-label uppercase tracking-widest text-muted-foreground font-bold">
+                            {e.tipo === "fatal" ? "Prazo Fatal" : "Evento"}
+                          </span>
+                        </div>
+                        <p className="text-sm font-serif text-foreground">{e.titulo}</p>
+                        {e.detalhe && (
+                          <p className="text-xs text-muted-foreground italic mt-1">{e.detalhe}</p>
+                        )}
+                        <button
+                          onClick={() => handleDelete(e.id)}
+                          className="absolute top-2 right-2 p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            <button
-              onClick={() => setModalOpen(true)}
-              className="mt-4 w-full text-[10px] font-label uppercase tracking-widest text-foreground border border-border px-3 py-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all rounded-sm flex items-center justify-center gap-2"
-            >
-              <Plus size={12} />
-              Adicionar para este dia
-            </button>
-          </div>
-
-          {/* Upcoming */}
-          <div className="bg-card p-6 rounded-xl shadow-sm border border-border">
-            <h4 className="text-base font-serif text-foreground mb-4">Próximos Eventos</h4>
-            {upcomingPrazos.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic py-2">
-                Nenhum prazo futuro cadastrado.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {upcomingPrazos.map((e) => (
-                  <button
-                    key={e.id}
-                    onClick={() => {
-                      const d = parseISO(e.data);
-                      setSelectedDate(d);
-                      setCurrentMonth(d);
-                    }}
-                    className={`w-full text-left p-3 rounded-lg border-l-2 hover:bg-muted/30 transition-colors ${
-                      e.tipo === "fatal" ? "border-destructive" : "border-accent"
-                    }`}
-                  >
-                    <span className="text-[10px] font-label uppercase tracking-widest text-muted-foreground font-bold">
-                      {format(parseISO(e.data), "dd MMM", { locale: ptBR })}
-                    </span>
-                    <p className="text-sm font-serif text-foreground">{e.titulo}</p>
-                  </button>
-                ))}
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="mt-4 w-full text-[10px] font-label uppercase tracking-widest text-foreground border border-border px-3 py-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all rounded-sm flex items-center justify-center gap-2"
+                >
+                  <Plus size={12} />
+                  Adicionar para este dia
+                </button>
               </div>
-            )}
-          </div>
+
+              {/* Upcoming */}
+              <div className="bg-card p-6 rounded-xl shadow-sm border border-border">
+                <h4 className="text-base font-serif text-foreground mb-4">Próximos Eventos</h4>
+                {upcomingPrazos.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic py-2">
+                    Nenhum prazo futuro cadastrado.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {upcomingPrazos.map((e) => (
+                      <button
+                        key={e.id}
+                        onClick={() => {
+                          const d = parseISO(e.data);
+                          setSelectedDate(d);
+                          setCurrentMonth(d);
+                        }}
+                        className={`w-full text-left p-3 rounded-lg border-l-2 hover:bg-muted/30 transition-colors ${
+                          e.tipo === "fatal" ? "border-destructive" : "border-accent"
+                        }`}
+                      >
+                        <span className="text-[10px] font-label uppercase tracking-widest text-muted-foreground font-bold">
+                          {format(parseISO(e.data), "dd MMM", { locale: ptBR })}
+                        </span>
+                        <p className="text-sm font-serif text-foreground">{e.titulo}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

@@ -1,11 +1,40 @@
+import { useState, useEffect } from "react";
 import { TrendingUp, Scale, Clock, Landmark } from "lucide-react";
 import { motion } from "framer-motion";
-import { getHonorariosMes, getSaldoEmConta, getProcessosAtivosCount } from "@/lib/store";
+import { getHonorariosMes, getSaldoEmConta, getProcessosAtivosCount, getPrazos } from "@/lib/store";
+import { useOutletContext } from "react-router-dom";
 
 export function MetricCards() {
-  const honorarios = getHonorariosMes();
-  const saldo = getSaldoEmConta();
-  const ativos = getProcessosAtivosCount();
+  const ctx = useOutletContext<{ refreshKey: number }>() || { refreshKey: 0 };
+  const [honorarios, setHonorarios] = useState(0);
+  const [saldo, setSaldo] = useState(0);
+  const [ativos, setAtivos] = useState(0);
+  const [deadlinesCount, setDeadlinesCount] = useState(0);
+  const [hasFatal, setHasFatal] = useState(false);
+
+  useEffect(() => {
+    async function loadData() {
+      const [h, s, a, p] = await Promise.all([
+        getHonorariosMes(),
+        getSaldoEmConta(),
+        getProcessosAtivosCount(),
+        getPrazos()
+      ]);
+
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const limit = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+      const limitStr = limit.toISOString().slice(0, 10);
+      const deadlines = p.filter((item) => item.data >= todayStr && item.data <= limitStr);
+
+      setHonorarios(h);
+      setSaldo(s);
+      setAtivos(a);
+      setDeadlinesCount(deadlines.length);
+      setHasFatal(deadlines.some((item) => item.tipo === "fatal"));
+    }
+    loadData();
+  }, [ctx?.refreshKey]);
 
   const fmt = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -28,11 +57,11 @@ export function MetricCards() {
     },
     {
       label: "Prazos Próximos (48h)",
-      value: "—",
-      change: "Dados da agenda",
-      positive: false,
+      value: String(deadlinesCount),
+      change: deadlinesCount === 1 ? "1 prazo próximo" : `${deadlinesCount} prazos próximos`,
+      positive: deadlinesCount === 0,
       icon: Clock,
-      urgent: false,
+      urgent: hasFatal && deadlinesCount > 0,
     },
     {
       label: "Saldo em Conta",

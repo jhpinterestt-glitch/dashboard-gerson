@@ -1,0 +1,34 @@
+{
+  "appId": "com.gersongomes.advocacia",
+  "productName": "Gerson Gomes Advocacia",
+  "asar": true,
+  "compression": "normal",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "src-tauri/icons/icon.ico"
+  },
+  "nsis": {
+    "oneClick": true,
+    "allowToChangeInstallationDirectory": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Gerson Gomes Advocacia"
+  }
+}

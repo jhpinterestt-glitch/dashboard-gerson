@@ -11,7 +11,7 @@ import {
   AreaChart,
 } from "recharts";
 import { useOutletContext } from "react-router-dom";
-import { getLancamentos } from "@/lib/store";
+import { getLancamentos, type Lancamento } from "@/lib/store";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -27,8 +27,13 @@ export function FinancialChart() {
     return () => window.removeEventListener("storage", handler);
   }, []);
 
+  const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+
+  useEffect(() => {
+    getLancamentos().then(setLancamentos);
+  }, [ctx?.refreshKey, tick]);
+
   const data = useMemo(() => {
-    const lancamentos = getLancamentos();
     const buckets = MESES.map((mes) => ({ mes, receita: 0, despesa: 0 }));
     lancamentos.forEach((l) => {
       const d = new Date(l.data);
@@ -38,7 +43,7 @@ export function FinancialChart() {
       else buckets[idx].despesa += l.valor;
     });
     return buckets;
-  }, [ctx?.refreshKey, tick, currentYear]);
+  }, [lancamentos, currentYear]);
 
   const hasData = data.some((d) => d.receita > 0 || d.despesa > 0);
 

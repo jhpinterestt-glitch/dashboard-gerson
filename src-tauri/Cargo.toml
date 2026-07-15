@@ -1,0 +1,19 @@
+[package]
+name = "gerson-gomes-advocacia"
+version = "1.0.0"
+description = "Gerson Gomes — Gestão Jurídica"
+authors = ["Gerson Gomes"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rfd = "0.15"
+base64 = "0.22"

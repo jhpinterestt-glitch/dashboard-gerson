@@ -19,11 +19,12 @@ const navItems = [
 ];
 
 interface Props {
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
   onNewCase?: () => void;
 }
 
-export function AppSidebar({ onNewCase }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+export function AppSidebar({ collapsed, setCollapsed, onNewCase }: Props) {
   const location = useLocation();
 
   return (
@@ -34,8 +35,12 @@ export function AppSidebar({ onNewCase }: Props) {
       )}
     >
       {/* Header */}
-      <div className={cn("p-6 flex flex-col items-center", collapsed && "p-3")}>
-        <Logo variant="dark" maxHeight={collapsed ? 36 : 80} />
+      <div className={cn("p-4 flex flex-col items-center", collapsed && "p-2")}>
+        <Logo
+          variant="dark"
+          maxHeight={collapsed ? 44 : 185}
+          className={cn(collapsed ? "max-w-[44px]" : "w-full max-w-[210px] px-2")}
+        />
         {!collapsed && (
           <p className="mt-3 text-[10px] tracking-[0.2em] uppercase text-sidebar-foreground/50 font-label text-center">
             Gestão Financeira Jurídica

@@ -14,23 +14,33 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function Financeiro() {
-  const { refreshKey } = useOutletContext<{ refreshKey: number }>();
+  const { refreshKey, searchQuery } = useOutletContext<{ refreshKey: number; searchQuery?: string }>() || { refreshKey: 0, searchQuery: "" };
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Lancamento | null>(null);
 
   useEffect(() => {
-    setLancamentos(getLancamentos());
+    getLancamentos().then(setLancamentos);
   }, [refreshKey]);
 
-  const reload = () => setLancamentos(getLancamentos());
+  const reload = () => getLancamentos().then(setLancamentos);
 
-  const handleDelete = (id: string) => {
-    deleteLancamento(id);
+  const handleDelete = async (id: string) => {
+    await deleteLancamento(id);
     reload();
   };
 
-  const sorted = [...lancamentos].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  const filtered = lancamentos.filter((t) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.descricao.toLowerCase().includes(q) ||
+      t.tipo.toLowerCase().includes(q) ||
+      t.valor.toString().includes(q)
+    );
+  });
+
+  const sorted = [...filtered].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
   return (
     <div>
@@ -55,9 +65,22 @@ export default function Financeiro() {
             </Button>
           </div>
 
+          {searchQuery && (
+            <div className="mb-4 text-xs text-muted-foreground flex items-center gap-2">
+              <span>Filtrando lançamentos por:</span>
+              <span className="text-primary font-bold bg-muted px-2 py-0.5 rounded">
+                "{searchQuery}"
+              </span>
+            </div>
+          )}
+
           {sorted.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">
-              Nenhum lançamento. Clique em "Novo Lançamento" para começar.
+              {lancamentos.length === 0 ? (
+                <span>Nenhum lançamento. Clique em "Novo Lançamento" para começar.</span>
+              ) : (
+                <span>Nenhum lançamento encontrado para a busca. Tente buscar por outros termos de descrição ou valores.</span>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -128,9 +151,9 @@ function NovoLancamentoModal({ onClose, onSaved }: { onClose: () => void; onSave
   const [valor, setValor] = useState("");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!descricao.trim() || !valor.trim()) return;
-    addLancamento({
+    await addLancamento({
       tipo,
       descricao,
       valor: parseFloat(valor.replace(/[^\d.,]/g, "").replace(",", ".")) || 0,
@@ -184,9 +207,9 @@ function EditLancamentoModal({ lancamento, onClose, onSaved }: { lancamento: Lan
   const [valor, setValor] = useState(String(lancamento.valor));
   const [data, setData] = useState(lancamento.data);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!descricao.trim() || !valor.trim()) return;
-    updateLancamento(lancamento.id, {
+    await updateLancamento(lancamento.id, {
       tipo,
       descricao,
       valor: parseFloat(valor.replace(/[^\d.,]/g, "").replace(",", ".")) || 0,
